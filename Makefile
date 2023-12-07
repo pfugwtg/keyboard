@@ -1,3 +1,3 @@
 all:
-	go build -ldflags "-w -s -H windowsgui"
+	go build -ldflags "-w -s -H windowsgui -extldflags --static"
 
