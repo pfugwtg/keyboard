@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "WinUser.h"
 #include <iostream>
+#include <fstream>
 #include <time.h>
 
 #include "keyboard.h"
@@ -30,15 +31,32 @@ clock_t start, finish;
 double during;
 DWORD last_code = 0;
 
-double delay_time = 100.0;
+double delay_time = 40.0;
 
 
 // This struct contains the data received by the hook callback. As you see in the callback function
 // it contains the thing you will need: vkCode = virtual key code.
 KBDLLHOOKSTRUCT kbdStruct;
 
+void WriteLog(const char* msg) {
+    std::ofstream logfile;
+    logfile.open("log.txt", std::ios::out | std::ios::app);
+    if (!logfile.is_open()) {
+    std::cerr << "Failed to open log file." << std::endl;
+        return;
+    }
+    logfile << msg << std::endl;
+    logfile.close();
+}
+
 void ReleaseHook() {
     UnhookWindowsHookEx(_hook);
+}
+
+// Check whether pressed key is controlling key. eg: Ctrl, Alt, etc
+bool CheckEditKeyPressed(int vkCode) {
+    // vkCode defination, see https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+    return vkCode >= 0x30 && vkCode <= 0x5A || vkCode >= 0x60 && vkCode <= 0x69;
 }
 
 // This is the callback function. Consider it the event that is raised when, in this case,
@@ -52,16 +70,21 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
         if (wParam == WM_KEYDOWN) {
             // lParam is the pointer to the struct containing the data needed, so cast and assign it to kdbStruct.
             kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
-            // a key (non-system) is pressed.
-            //cout << kbdStruct.vkCode << endl;
-            finish  = clock();
-            during = double(finish - start);
-            if (during < delay_time && kbdStruct.vkCode == last_code) {
-                cout << "Repeat key : 0x" << hex << last_code << "! Deny! keyboard double click in:" << during << "ms" << endl;
-                return 1;
+            if (CheckEditKeyPressed(kbdStruct.vkCode)) {
+                // a key (non-system) is pressed.
+                //cout << kbdStruct.vkCode << endl;
+                finish  = clock();
+                during = double(finish - start);
+                if (during < delay_time && kbdStruct.vkCode == last_code) {
+                    char str[72];
+                    sprintf(str, "Repeat key : 0x%x %x! Deny! keyboard double click in: %f ms", hex, last_code, during);
+                    WriteLog(str);
+                    // cout << "Repeat key : 0x" << hex << last_code << "! Deny! keyboard double click in:" << during << "ms";
+                    return 1;
+                }
+                start = clock();
+                last_code = kbdStruct.vkCode;
             }
-            start = clock();
-            last_code = kbdStruct.vkCode;
         }
     }
 
@@ -93,7 +116,7 @@ void UpdateKeyPressRate(int pressRate) {
 int Setup() {
     start = clock();
 
-    cout << "start monitor" << endl;
+    WriteLog("start monitor");
 
     // Set the hook
     SetHook();
