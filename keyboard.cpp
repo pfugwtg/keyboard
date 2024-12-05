@@ -31,7 +31,9 @@ clock_t start, finish;
 double during;
 DWORD last_code = 0;
 
-double delay_time = 40.0;
+double delay_time = 80.0;
+
+int openComplexKeyMap = true;
 
 
 // This struct contains the data received by the hook callback. As you see in the callback function
@@ -59,17 +61,65 @@ bool CheckEditKeyPressed(int vkCode) {
     return vkCode >= 0x30 && vkCode <= 0x5A || vkCode >= 0x60 && vkCode <= 0x69;
 }
 
+int MapComplexKeyBoard(int vkCode, WPARAM wParam)  {
+    if (openComplexKeyMap != 1) {
+        return 0;
+    }
+
+    switch (vkCode) {
+        case VK_F2: {
+            // Map F2 to [Ctrl + F]
+            if (wParam == WM_KEYDOWN) {
+                keybd_event(VK_CONTROL, 0, 0, 0);
+                keybd_event(VkKeyScan('F'), 0, 0, 0);
+            } else if (wParam == WM_KEYUP) {
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+                keybd_event(VkKeyScan('F'), 0, KEYEVENTF_KEYUP, 0);
+            }
+            return 1;
+        }
+        case VK_F3: {
+            // Map F3 to [Ctrl + C]
+            if (wParam == WM_KEYDOWN) {
+                keybd_event(VK_CONTROL, 0, 0, 0);
+                keybd_event(VkKeyScan('C'), 0, 0, 0);
+            } else if (wParam == WM_KEYUP) {
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+                keybd_event(VkKeyScan('C'), 0, KEYEVENTF_KEYUP, 0);
+            }
+            return 1;
+        }
+        case VK_F4: {
+            // Map F4 to [Ctrl + V]
+            if (wParam == WM_KEYDOWN) {
+                keybd_event(VK_CONTROL, 0, 0, 0);
+                keybd_event(VkKeyScan('V'), 0, 0, 0);
+            } else if (wParam == WM_KEYUP) {
+                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+                keybd_event(VkKeyScan('V'), 0, KEYEVENTF_KEYUP, 0);
+            }
+            return 1;
+        }
+        
+        default:
+            return 0;
+    }
+}
+
 // This is the callback function. Consider it the event that is raised when, in this case,
 // a key is pressed.
 //LRESULT __stdcall HookCallback(int nCode, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-
 {
     if (nCode >= 0) {
+        kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
+        if (MapComplexKeyBoard(kbdStruct.vkCode, wParam) == 1) {
+            return 1;
+        }
+
         // the action is valid: HC_ACTION.
         if (wParam == WM_KEYDOWN) {
             // lParam is the pointer to the struct containing the data needed, so cast and assign it to kdbStruct.
-            kbdStruct = *((KBDLLHOOKSTRUCT*)lParam);
             if (CheckEditKeyPressed(kbdStruct.vkCode)) {
                 // a key (non-system) is pressed.
                 //cout << kbdStruct.vkCode << endl;
@@ -112,6 +162,9 @@ void UpdateKeyPressRate(int pressRate) {
     delay_time = double(1000 / (double)pressRate);
 }
 
+void OpenMapComplexKeyboard(int open) {
+    openComplexKeyMap = open;
+}
 
 int Setup() {
     start = clock();

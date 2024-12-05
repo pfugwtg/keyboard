@@ -2,6 +2,7 @@
 extern "C" {
 #endif
 
+void OpenMapComplexKeyboard(int open);
 void UpdateKeyPressRate(int pressRate);
 int Setup();
 

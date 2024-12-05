@@ -11,6 +11,10 @@ import (
 
 var (
 	keyNumberPerSecond = 10
+	lastAction *walk.Action
+)
+const (
+	BASE_KEY_NUMBER_PER_SECOND float64 = 12.5
 )
 
 func main() {
@@ -19,7 +23,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	icon, err := walk.Resources.Icon("icon.ico") //walk.NewIconFromResource("icon.ico")
+	icon, err := walk.Resources.Icon("icon.ico")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,24 +39,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//ni.SetToolTip("右键选择不同击键或退出")
+	ni.SetToolTip(fmt.Sprintf("每秒最多输出 N（默认 %.1f） 个相同字符，或退出", BASE_KEY_NUMBER_PER_SECOND))
 
-	for i := 10; i <= 20; i += 5 {
-		action := walk.NewAction()
-		action.SetText(fmt.Sprintf("击键%d", i))
-		action.Triggered().Attach(SetKeyTimesFunc(i))
-		ni.ContextMenu().Actions().Add(action)
-	}
+	actionList := ni.ContextMenu().Actions()
 
-	// We put an exit action into the context menu.
-	exitAction := walk.NewAction()
-	if err := exitAction.SetText("E&xit"); err != nil {
-		log.Fatal(err)
-	}
-	exitAction.Triggered().Attach(func() { walk.App().Exit(0) })
-	if err := ni.ContextMenu().Actions().Add(exitAction); err != nil {
-		log.Fatal(err)
-	}
+	addInputMaxFrequencyMenuList(actionList)
+	actionList.Add(walk.NewSeparatorAction())
+	actionList.Add(createMapKeyMenu()) // Ctrl + C/V/F
+	actionList.Add(walk.NewSeparatorAction())
+	actionList.Add(createExitMenu())
 
 	ni.SetVisible(true)
 
@@ -66,9 +61,56 @@ func main() {
 	mw.Run()
 }
 
-func SetKeyTimesFunc(i int) func() {
+func createExitMenu() *walk.Action {
+	exitAction := walk.NewAction()
+	exitAction.SetText("E&xit")
+	exitAction.Triggered().Attach(func() { 
+		walk.App().Exit(0) 
+	})
+	return exitAction
+}
+
+func createMapKeyMenu() *walk.Action {
+	action := walk.NewAction()
+	action.SetText("映射 Ctrl + C/V/F")
+
+	open := true
+	action.Triggered().Attach(func() {
+		open = !open
+		openMapKey := 0
+		if (open) {
+			openMapKey = 1
+		}
+		C.OpenMapComplexKeyboard(C.int(openMapKey))
+		action.SetChecked(open)
+	})
+	action.SetChecked(open)
+	return action
+}
+
+func addInputMaxFrequencyMenuList(actionList *walk.ActionList) {
+	for i := 1; i <= 3; i++ {
+		action := walk.NewAction()
+		action.SetText(fmt.Sprintf("击键频率 %.1f", float64(i) * BASE_KEY_NUMBER_PER_SECOND))
+		action.Triggered().Attach(setKeyTimesFunc(i, action))
+		
+		actionList.Add(action)
+	}
+	setActionChecked(actionList.At(0))
+}
+
+func setKeyTimesFunc(i int, action *walk.Action) func() {
 	return func() {
-		keyNumberPerSecond = i
+		setActionChecked(action)
+		keyNumberPerSecond = int(float64(i) * BASE_KEY_NUMBER_PER_SECOND)
 		C.UpdateKeyPressRate(C.int(keyNumberPerSecond))
 	}
+}
+
+func setActionChecked(action *walk.Action) {
+	if lastAction != nil {
+		lastAction.SetChecked(false)
+	}
+	action.SetChecked(true)
+	lastAction = action
 }
