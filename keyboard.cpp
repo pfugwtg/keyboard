@@ -61,45 +61,34 @@ bool CheckEditKeyPressed(int vkCode) {
     return vkCode >= 0x30 && vkCode <= 0x5A || vkCode >= 0x60 && vkCode <= 0x69;
 }
 
+void SimulateCtrlPressed(WPARAM wParam, char key) {
+    if (wParam == WM_KEYDOWN) {
+        keybd_event(VK_CONTROL, 0, 0, 0);
+        keybd_event(VkKeyScan(key), 0, 0, 0);
+    } else if (wParam == WM_KEYUP) {
+        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VkKeyScan(key), 0, KEYEVENTF_KEYUP, 0);
+    }
+}
+
 int MapComplexKeyBoard(int vkCode, WPARAM wParam)  {
     if (openComplexKeyMap != 1) {
         return 0;
     }
 
     switch (vkCode) {
-        case VK_F2: {
+        case VK_F2:
             // Map F2 to [Ctrl + F]
-            if (wParam == WM_KEYDOWN) {
-                keybd_event(VK_CONTROL, 0, 0, 0);
-                keybd_event(VkKeyScan('F'), 0, 0, 0);
-            } else if (wParam == WM_KEYUP) {
-                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
-                keybd_event(VkKeyScan('F'), 0, KEYEVENTF_KEYUP, 0);
-            }
+            SimulateCtrlPressed(wParam, 'F');
             return 1;
-        }
-        case VK_F3: {
+        case VK_F3:
             // Map F3 to [Ctrl + C]
-            if (wParam == WM_KEYDOWN) {
-                keybd_event(VK_CONTROL, 0, 0, 0);
-                keybd_event(VkKeyScan('C'), 0, 0, 0);
-            } else if (wParam == WM_KEYUP) {
-                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
-                keybd_event(VkKeyScan('C'), 0, KEYEVENTF_KEYUP, 0);
-            }
+            SimulateCtrlPressed(wParam, 'C');
             return 1;
-        }
-        case VK_F4: {
+        case VK_F4:
             // Map F4 to [Ctrl + V]
-            if (wParam == WM_KEYDOWN) {
-                keybd_event(VK_CONTROL, 0, 0, 0);
-                keybd_event(VkKeyScan('V'), 0, 0, 0);
-            } else if (wParam == WM_KEYUP) {
-                keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
-                keybd_event(VkKeyScan('V'), 0, KEYEVENTF_KEYUP, 0);
-            }
+            SimulateCtrlPressed(wParam, 'V');
             return 1;
-        }
         
         default:
             return 0;
