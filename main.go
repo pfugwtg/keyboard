@@ -5,6 +5,7 @@ import "C"
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/lxn/walk"
 )
@@ -16,6 +17,10 @@ var (
 const (
 	BASE_KEY_NUMBER_PER_SECOND float64 = 12.5
 )
+
+func init() {
+	InitConfig()
+}
 
 func main() {
 	mw, err := walk.NewMainWindow()
@@ -72,7 +77,7 @@ func createExitMenu() *walk.Action {
 
 func createMapKeyMenu() *walk.Action {
 	action := walk.NewAction()
-	action.SetText("映射 Ctrl + C/V/F")
+	action.SetText("映射 Ctrl + C/V/F/A, Ctrl + Shift + A")
 
 	open := true
 	action.Triggered().Attach(func() {
@@ -96,7 +101,8 @@ func addInputMaxFrequencyMenuList(actionList *walk.ActionList) {
 		
 		actionList.Add(action)
 	}
-	setActionChecked(actionList.At(0))
+	pos, _ := strconv.Atoi(GetConfig(CFG_KEY_RATE_POS_SELECTED))
+	setActionChecked(actionList.At(pos))
 }
 
 func setKeyTimesFunc(i int, action *walk.Action) func() {
@@ -104,6 +110,7 @@ func setKeyTimesFunc(i int, action *walk.Action) func() {
 		setActionChecked(action)
 		keyNumberPerSecond = int(float64(i) * BASE_KEY_NUMBER_PER_SECOND)
 		C.UpdateKeyPressRate(C.int(keyNumberPerSecond))
+		SetConfig(CFG_KEY_RATE_POS_SELECTED, strconv.Itoa(i - 1))
 	}
 }
 
