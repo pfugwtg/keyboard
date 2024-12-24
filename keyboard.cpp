@@ -71,6 +71,18 @@ void SimulateCtrlPressed(WPARAM wParam, char key) {
     }
 }
 
+void SimulateCtrlShiftPressed(WPARAM wParam, char key) {
+    if (wParam == WM_KEYDOWN) {
+        keybd_event(VK_CONTROL, 0, 0, 0);
+        keybd_event(VK_SHIFT, 0, 0, 0);
+        keybd_event(VkKeyScan(key), 0, 0, 0);
+    } else if (wParam == WM_KEYUP) {
+        keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+        keybd_event(VkKeyScan(key), 0, KEYEVENTF_KEYUP, 0);
+    }
+}
+
 int MapComplexKeyBoard(int vkCode, WPARAM wParam)  {
     if (openComplexKeyMap != 1) {
         return 0;
@@ -88,6 +100,14 @@ int MapComplexKeyBoard(int vkCode, WPARAM wParam)  {
         case VK_F4:
             // Map F4 to [Ctrl + V]
             SimulateCtrlPressed(wParam, 'V');
+            return 1;
+        case VK_F6:
+            // Map F6 to [Ctrl + A]
+            SimulateCtrlPressed(wParam, 'A');
+            return 1;
+        case VK_F7:
+            // Map F7 to [Ctrl + Shift + A]
+            SimulateCtrlShiftPressed(wParam, 'A');
             return 1;
         
         default:
